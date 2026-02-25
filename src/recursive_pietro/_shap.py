@@ -67,23 +67,20 @@ def compute_shap_values(
     with warnings.catch_warnings():
         warnings.simplefilter("ignore" if verbose <= 1 else "default")
 
-        # Tree-based models don't need a background masker, and passing one
-        # can cause SHAP's auto-detection to fail with certain model/version
-        # combinations (e.g. XGBoost on older Python).
+        # Use TreeExplainer directly for tree-based models to avoid
+        # shap.Explainer auto-detection failures on certain Python/package
+        # version combinations (e.g. XGBoost on Python 3.10).
         if _is_tree_model(model) or shap_kwargs.get("feature_perturbation") == "tree_path_dependent":
-            explainer = Explainer(model, seed=random_state, **shap_kwargs)
-        else:
-            # Create background data for non-tree explainers
-            n_bg = min(sample_size, max(1, int(np.ceil(X.shape[0] * 0.2)))) if X.shape[0] < sample_size else sample_size
-            mask = sample(X, n_bg, random_state=random_state)
-            explainer = Explainer(model, seed=random_state, masker=mask, **shap_kwargs)
-
-        if isinstance(explainer, TreeExplainer):
+            explainer = TreeExplainer(model, **shap_kwargs)
             shap_values = explainer.shap_values(X, check_additivity=check_additivity, approximate=approximate)
             # SHAP >= 0.43: binary classification returns 3D array (n_samples, n_features, 2)
             if not isinstance(shap_values, list) and shap_values.ndim == 3:
                 shap_values = shap_values[:, :, 1]
         else:
+            # Create background data for non-tree explainers
+            n_bg = min(sample_size, max(1, int(np.ceil(X.shape[0] * 0.2)))) if X.shape[0] < sample_size else sample_size
+            mask = sample(X, n_bg, random_state=random_state)
+            explainer = Explainer(model, seed=random_state, masker=mask, **shap_kwargs)
             shap_values = explainer.shap_values(X)
 
         # For binary classification, some models return a list of [class0, class1]
