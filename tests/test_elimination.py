@@ -94,7 +94,7 @@ class TestTransform:
         sel = ShapFeatureElimination(rf_classifier, step=3, cv=2, scoring="roc_auc", n_jobs=NJ)
         X, y = binary_dataset
         sel.fit(X, y)
-        support_features = [c for c, s in zip(X.columns, sel.support_) if s]
+        support_features = [c for c, s in zip(sel.column_names_, sel.support_) if s]
         assert support_features == sel.selected_features_
 
 

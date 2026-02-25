@@ -34,6 +34,18 @@ from recursive_pietro._validation import (
 logger = logging.getLogger(__name__)
 
 
+def _seed_model(model, seed: int | None) -> None:
+    """Set ``random_state`` on *model* in-place if it accepts one and *seed* is not None."""
+    if seed is None:
+        return
+    try:
+        params = model.get_params(deep=False)
+    except AttributeError:
+        return
+    if "random_state" in params:
+        model.set_params(random_state=seed)
+
+
 class ShapFeatureElimination(SelectorMixin, BaseEstimator):
     """Backward recursive feature elimination using SHAP importance with cross-validation.
 
@@ -82,6 +94,9 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
         ``penalized = mean_abs_shap - std_abs_shap * factor``.
     shap_fast_mode : bool, default=False
         Use approximate SHAP values (``TreeExplainer`` only).
+    sort_columns : bool, default=True
+        Sort feature columns alphabetically before fitting so that results
+        are invariant to the input column order.
     verbose : int, default=0
         0 = silent, 1 = progress bar, 2 = detailed logging per round.
 
@@ -115,6 +130,7 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
         eval_metric: str | None = None,
         shap_variance_penalty_factor: float | None = None,
         shap_fast_mode: bool = False,
+        sort_columns: bool = True,
         verbose: int = 0,
     ):
         self.model = model
@@ -128,6 +144,7 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
         self.eval_metric = eval_metric
         self.shap_variance_penalty_factor = shap_variance_penalty_factor
         self.shap_fast_mode = shap_fast_mode
+        self.sort_columns = sort_columns
         self.verbose = verbose
 
     # ------------------------------------------------------------------
@@ -137,6 +154,17 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
     def _get_support_mask(self) -> np.ndarray:
         check_is_fitted(self, "support_")
         return self.support_
+
+    def transform(self, X):
+        """Reduce X to the selected features.
+
+        When ``sort_columns=True`` (default), columns are sorted to match
+        the order seen during ``fit`` before applying the feature mask.
+        """
+        check_is_fitted(self, "support_")
+        if self.sort_columns and isinstance(X, pd.DataFrame):
+            X = X[sorted(X.columns)]
+        return super().transform(X)
 
     # ------------------------------------------------------------------
     # fit / transform
@@ -203,8 +231,16 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
             and self.eval_metric is not None
         )
 
+        # --- Reproducible seed sequence ---
+        if self.random_state is not None:
+            rng = np.random.RandomState(self.random_state)
+        else:
+            rng = None
+
         # --- Validate data ---
         X_df = validate_data(X, column_names=column_names)
+        if self.sort_columns:
+            X_df = X_df[sorted(X_df.columns)]
         self.column_names_ = list(X_df.columns)
         self.feature_names_in_ = np.array(self.column_names_)
         y_s = validate_target(y, X_df.index)
@@ -245,27 +281,37 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
 
             # Optional hyperparameter tuning
             if is_search:
-                search_clone = clone(self.model).fit(X=current_X, y=y_s, groups=groups)
+                search_clone = clone(self.model)
+                if rng is not None:
+                    _seed_model(search_clone, rng.randint(0, 2**31))
+                search_clone.fit(X=current_X, y=y_s, groups=groups)
                 current_model = search_clone.estimator.set_params(**search_clone.best_params_)
             else:
                 current_model = clone(self.model)
+
+            # Derive per-fold seeds for deterministic parallel execution
+            splits = list(cv_splitter.split(current_X, y_s, groups))
+            if rng is not None:
+                fold_seeds = rng.randint(0, 2**31, size=len(splits)).tolist()
+            else:
+                fold_seeds = [None] * len(splits)
 
             # CV: compute SHAP + scores per fold
             if use_early_stopping:
                 fold_results = Parallel(n_jobs=self.n_jobs)(
                     delayed(self._fold_early_stopping)(
                         current_X, y_s, current_model, train_idx, val_idx,
-                        sw, scorer, **shap_kwargs,
+                        sw, scorer, fold_seed, **shap_kwargs,
                     )
-                    for train_idx, val_idx in cv_splitter.split(current_X, y_s, groups)
+                    for (train_idx, val_idx), fold_seed in zip(splits, fold_seeds)
                 )
             else:
                 fold_results = Parallel(n_jobs=self.n_jobs)(
                     delayed(self._fold_standard)(
                         current_X, y_s, current_model, train_idx, val_idx,
-                        sw, scorer, **shap_kwargs,
+                        sw, scorer, fold_seed, **shap_kwargs,
                     )
-                    for train_idx, val_idx in cv_splitter.split(current_X, y_s, groups)
+                    for (train_idx, val_idx), fold_seed in zip(splits, fold_seeds)
                 )
 
             # Aggregate SHAP values across folds
@@ -444,10 +490,11 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
     # ------------------------------------------------------------------
 
     def _fold_standard(
-        self, X, y, model, train_idx, val_idx, sample_weight, scorer, **shap_kwargs,
+        self, X, y, model, train_idx, val_idx, sample_weight, scorer, fold_seed, **shap_kwargs,
     ):
         """Fit model, score, compute SHAP — standard (no early stopping) path."""
         model = clone(model)
+        _seed_model(model, fold_seed)
         X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
         y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
 
@@ -463,17 +510,18 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
         shap_vals = compute_shap_values(
             model, X_val,
             approximate=self.shap_fast_mode,
-            random_state=self.random_state,
+            random_state=fold_seed,
             verbose=self.verbose,
             **shap_kwargs,
         )
         return shap_vals, score_train, score_val
 
     def _fold_early_stopping(
-        self, X, y, model, train_idx, val_idx, sample_weight, scorer, **shap_kwargs,
+        self, X, y, model, train_idx, val_idx, sample_weight, scorer, fold_seed, **shap_kwargs,
     ):
         """Fit model with early stopping, score, compute SHAP."""
         model = clone(model)
+        _seed_model(model, fold_seed)
         X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
         y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
 
@@ -494,7 +542,7 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
         shap_vals = compute_shap_values(
             model, X_val,
             approximate=self.shap_fast_mode,
-            random_state=self.random_state,
+            random_state=fold_seed,
             verbose=self.verbose,
             **shap_kwargs,
         )
