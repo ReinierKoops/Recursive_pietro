@@ -13,8 +13,12 @@ def _make_data(random_state=42):
     from sklearn.datasets import make_classification
 
     X, y = make_classification(
-        n_samples=100, n_features=10, n_informative=4,
-        n_redundant=4, n_clusters_per_class=1, class_sep=0.05,
+        n_samples=100,
+        n_features=10,
+        n_informative=4,
+        n_redundant=4,
+        n_clusters_per_class=1,
+        class_sep=0.05,
         random_state=random_state,
     )
     columns = [f"f{i}" for i in range(1, 11)]
@@ -104,7 +108,11 @@ class TestColumnOrderInvariance:
 
         sel = ShapFeatureElimination(
             RandomForestClassifier(n_estimators=5, max_depth=3),
-            step=3, cv=2, scoring="roc_auc", n_jobs=NJ, random_state=42,
+            step=3,
+            cv=2,
+            scoring="roc_auc",
+            n_jobs=NJ,
+            random_state=42,
             sort_columns=False,
         )
         sel.fit(X_shuffled, y)

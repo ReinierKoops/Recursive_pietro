@@ -57,7 +57,11 @@ def get_early_stopping_fit_params(
 
         if isinstance(model, LGBMModel):
             return _fit_params_lightgbm(
-                model, X_train, y_train, X_val, y_val,
+                model,
+                X_train,
+                y_train,
+                X_val,
+                y_val,
                 early_stopping_rounds=early_stopping_rounds,
                 eval_metric=eval_metric,
                 sample_weight=sample_weight,
@@ -74,7 +78,11 @@ def get_early_stopping_fit_params(
 
         if isinstance(model, XGBModel):
             return _fit_params_xgboost(
-                model, X_train, y_train, X_val, y_val,
+                model,
+                X_train,
+                y_train,
+                X_val,
+                y_val,
                 early_stopping_rounds=early_stopping_rounds,
                 eval_metric=eval_metric,
                 sample_weight=sample_weight,
@@ -90,7 +98,11 @@ def get_early_stopping_fit_params(
 
         if isinstance(model, CatBoost):
             return _fit_params_catboost(
-                model, X_train, y_train, X_val, y_val,
+                model,
+                X_train,
+                y_train,
+                X_val,
+                y_val,
                 early_stopping_rounds=early_stopping_rounds,
                 sample_weight=sample_weight,
                 train_index=train_index,
@@ -106,8 +118,18 @@ def get_early_stopping_fit_params(
 
 
 def _fit_params_lightgbm(
-    model, X_train, y_train, X_val, y_val, *,
-    early_stopping_rounds, eval_metric, sample_weight, train_index, val_index, verbose,
+    model,
+    X_train,
+    y_train,
+    X_val,
+    y_val,
+    *,
+    early_stopping_rounds,
+    eval_metric,
+    sample_weight,
+    train_index,
+    val_index,
+    verbose,
 ) -> dict:
     from lightgbm import early_stopping, log_evaluation
 
@@ -128,8 +150,17 @@ def _fit_params_lightgbm(
 
 
 def _fit_params_xgboost(
-    model, X_train, y_train, X_val, y_val, *,
-    early_stopping_rounds, eval_metric, sample_weight, train_index, val_index,
+    model,
+    X_train,
+    y_train,
+    X_val,
+    y_val,
+    *,
+    early_stopping_rounds,
+    eval_metric,
+    sample_weight,
+    train_index,
+    val_index,
 ) -> dict:
     model.set_params(eval_metric=eval_metric, early_stopping_rounds=early_stopping_rounds)
     params = {
@@ -144,8 +175,16 @@ def _fit_params_xgboost(
 
 
 def _fit_params_catboost(
-    model, X_train, y_train, X_val, y_val, *,
-    early_stopping_rounds, sample_weight, train_index, val_index,
+    model,
+    X_train,
+    y_train,
+    X_val,
+    y_val,
+    *,
+    early_stopping_rounds,
+    sample_weight,
+    train_index,
+    val_index,
 ) -> dict:
     from catboost import Pool
 

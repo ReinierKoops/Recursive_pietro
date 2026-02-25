@@ -14,6 +14,7 @@ class TestEarlyStoppingLightGBM:
     def lgbm_model(self):
         pytest.importorskip("lightgbm")
         from lightgbm import LGBMClassifier
+
         return LGBMClassifier(n_estimators=50, max_depth=3, random_state=42, verbose=-1)
 
     def test_fit_with_early_stopping(self, binary_dataset, lgbm_model):
@@ -54,8 +55,12 @@ class TestEarlyStoppingXGBoost:
     def xgb_model(self):
         pytest.importorskip("xgboost")
         from xgboost import XGBClassifier
+
         return XGBClassifier(
-            n_estimators=50, max_depth=3, random_state=42, verbosity=0,
+            n_estimators=50,
+            max_depth=3,
+            random_state=42,
+            verbosity=0,
         )
 
     def test_fit_with_early_stopping(self, binary_dataset, xgb_model):

@@ -25,9 +25,13 @@ class TestBasicElimination:
         assert isinstance(sel.report_, pd.DataFrame)
         assert len(sel.report_) > 0
         expected_cols = {
-            "num_features", "features_set", "eliminated_features",
-            "train_metric_mean", "train_metric_std",
-            "val_metric_mean", "val_metric_std",
+            "num_features",
+            "features_set",
+            "eliminated_features",
+            "train_metric_mean",
+            "train_metric_std",
+            "val_metric_mean",
+            "val_metric_std",
         }
         assert expected_cols == set(sel.report_.columns)
 
@@ -47,7 +51,12 @@ class TestBasicElimination:
 
     def test_min_features_respected(self, binary_dataset, rf_classifier):
         sel = ShapFeatureElimination(
-            rf_classifier, step=3, min_features_to_select=3, cv=2, scoring="roc_auc", n_jobs=NJ,
+            rf_classifier,
+            step=3,
+            min_features_to_select=3,
+            cv=2,
+            scoring="roc_auc",
+            n_jobs=NJ,
         )
         X, y = binary_dataset
         sel.fit(X, y)
@@ -164,7 +173,11 @@ class TestRegression:
 
     def test_regression_fit(self, regression_dataset, rf_regressor):
         sel = ShapFeatureElimination(
-            rf_regressor, step=3, cv=2, scoring="neg_mean_squared_error", n_jobs=NJ,
+            rf_regressor,
+            step=3,
+            cv=2,
+            scoring="neg_mean_squared_error",
+            n_jobs=NJ,
         )
         X, y = regression_dataset
         sel.fit(X, y)
@@ -218,14 +231,18 @@ class TestValidation:
 
     def test_invalid_early_stopping_rounds(self, rf_classifier):
         sel = ShapFeatureElimination(
-            rf_classifier, early_stopping_rounds=-5, eval_metric="auc",
+            rf_classifier,
+            early_stopping_rounds=-5,
+            eval_metric="auc",
         )
         with pytest.raises(ValueError, match="early_stopping_rounds"):
             sel.fit(pd.DataFrame({"a": [1, 2]}), pd.Series([0, 1]))
 
     def test_early_stopping_incompatible_model(self, rf_classifier):
         sel = ShapFeatureElimination(
-            rf_classifier, early_stopping_rounds=10, eval_metric="auc",
+            rf_classifier,
+            early_stopping_rounds=10,
+            eval_metric="auc",
         )
         with pytest.raises(ValueError, match="not compatible"):
             sel.fit(pd.DataFrame({"a": [1, 2]}), pd.Series([0, 1]))

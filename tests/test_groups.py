@@ -17,8 +17,12 @@ def _make_grouped_data(random_state=42):
     from sklearn.datasets import make_classification
 
     X, y = make_classification(
-        n_samples=120, n_features=10, n_informative=4,
-        n_redundant=4, n_clusters_per_class=1, class_sep=0.05,
+        n_samples=120,
+        n_features=10,
+        n_informative=4,
+        n_redundant=4,
+        n_clusters_per_class=1,
+        class_sep=0.05,
         random_state=random_state,
     )
     columns = [f"f{i}" for i in range(1, 11)]
@@ -36,8 +40,11 @@ class TestGroupKFold:
         X, y, groups = _make_grouped_data()
         sel = ShapFeatureElimination(
             RandomForestClassifier(n_estimators=5, max_depth=3),
-            step=3, cv=GroupKFold(n_splits=3), scoring="roc_auc",
-            n_jobs=NJ, random_state=42,
+            step=3,
+            cv=GroupKFold(n_splits=3),
+            scoring="roc_auc",
+            n_jobs=NJ,
+            random_state=42,
         )
         sel.fit(X, y, groups=groups)
         assert len(sel.report_) > 0
@@ -47,8 +54,11 @@ class TestGroupKFold:
         X, y, groups = _make_grouped_data()
         sel = ShapFeatureElimination(
             RandomForestClassifier(n_estimators=5, max_depth=3),
-            step=3, cv=GroupKFold(n_splits=3), scoring="roc_auc",
-            n_jobs=NJ, random_state=42,
+            step=3,
+            cv=GroupKFold(n_splits=3),
+            scoring="roc_auc",
+            n_jobs=NJ,
+            random_state=42,
         )
         sel.fit(X, y, groups=groups)
         X_out = sel.transform(X)
@@ -57,8 +67,11 @@ class TestGroupKFold:
     def test_groups_seed_stable(self):
         X, y, groups = _make_grouped_data()
         kwargs = dict(
-            step=3, cv=GroupKFold(n_splits=3), scoring="roc_auc",
-            n_jobs=NJ, random_state=42,
+            step=3,
+            cv=GroupKFold(n_splits=3),
+            scoring="roc_auc",
+            n_jobs=NJ,
+            random_state=42,
         )
 
         sel_a = ShapFeatureElimination(RandomForestClassifier(n_estimators=5, max_depth=3), **kwargs)
@@ -78,8 +91,11 @@ class TestStratifiedGroupKFold:
         X, y, groups = _make_grouped_data()
         sel = ShapFeatureElimination(
             RandomForestClassifier(n_estimators=5, max_depth=3),
-            step=3, cv=StratifiedGroupKFold(n_splits=3), scoring="roc_auc",
-            n_jobs=NJ, random_state=42,
+            step=3,
+            cv=StratifiedGroupKFold(n_splits=3),
+            scoring="roc_auc",
+            n_jobs=NJ,
+            random_state=42,
         )
         sel.fit(X, y, groups=groups)
         assert len(sel.report_) > 0
@@ -92,7 +108,10 @@ class TestGroupValidation:
         X, y, _ = _make_grouped_data()
         sel = ShapFeatureElimination(
             RandomForestClassifier(n_estimators=5, max_depth=3),
-            step=3, cv=GroupKFold(n_splits=3), scoring="roc_auc", n_jobs=NJ,
+            step=3,
+            cv=GroupKFold(n_splits=3),
+            scoring="roc_auc",
+            n_jobs=NJ,
         )
         with pytest.raises(ValueError, match="requires groups"):
             sel.fit(X, y)
@@ -101,7 +120,11 @@ class TestGroupValidation:
         X, y, groups = _make_grouped_data()
         sel = ShapFeatureElimination(
             RandomForestClassifier(n_estimators=5, max_depth=3),
-            step=3, cv=2, scoring="roc_auc", n_jobs=NJ, random_state=42,
+            step=3,
+            cv=2,
+            scoring="roc_auc",
+            n_jobs=NJ,
+            random_state=42,
         )
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -114,8 +137,11 @@ class TestGroupValidation:
         groups_series = pd.Series(groups, name="group")
         sel = ShapFeatureElimination(
             RandomForestClassifier(n_estimators=5, max_depth=3),
-            step=3, cv=GroupKFold(n_splits=3), scoring="roc_auc",
-            n_jobs=NJ, random_state=42,
+            step=3,
+            cv=GroupKFold(n_splits=3),
+            scoring="roc_auc",
+            n_jobs=NJ,
+            random_state=42,
         )
         sel.fit(X, y, groups=groups_series)
         assert len(sel.report_) > 0

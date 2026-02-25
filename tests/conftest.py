@@ -60,7 +60,9 @@ def regression_dataset():
 def rf_classifier():
     """Small random forest classifier for testing."""
     return RandomForestClassifier(
-        n_estimators=5, max_depth=3, random_state=42,
+        n_estimators=5,
+        max_depth=3,
+        random_state=42,
     )
 
 
@@ -68,5 +70,7 @@ def rf_classifier():
 def rf_regressor():
     """Small random forest regressor for testing."""
     return RandomForestRegressor(
-        n_estimators=5, max_depth=3, random_state=42,
+        n_estimators=5,
+        max_depth=3,
+        random_state=42,
     )

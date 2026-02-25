@@ -213,9 +213,7 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
 
         if self.early_stopping_rounds is not None:
             if not isinstance(self.early_stopping_rounds, int) or self.early_stopping_rounds <= 0:
-                raise ValueError(
-                    f"early_stopping_rounds must be a positive int, got {self.early_stopping_rounds!r}."
-                )
+                raise ValueError(f"early_stopping_rounds must be a positive int, got {self.early_stopping_rounds!r}.")
             if self.eval_metric is None:
                 warnings.warn(
                     "early_stopping_rounds is set but eval_metric is None. "
@@ -227,10 +225,7 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
                     "Only LightGBM, XGBoost, and CatBoost support early stopping."
                 )
 
-        use_early_stopping = (
-            self.early_stopping_rounds is not None
-            and self.eval_metric is not None
-        )
+        use_early_stopping = self.early_stopping_rounds is not None and self.eval_metric is not None
 
         # --- Reproducible seed sequence ---
         if self.random_state is not None:
@@ -262,6 +257,7 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
         if self.verbose == 1:
             try:
                 from tqdm.auto import tqdm
+
                 # Rough estimate of total rounds
                 n_rounds = self._estimate_rounds(len(self.column_names_), step, stopping)
                 progress = tqdm(total=n_rounds, desc="Feature elimination", unit="round")
@@ -302,16 +298,30 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
             if use_early_stopping:
                 fold_results = Parallel(n_jobs=self.n_jobs)(
                     delayed(self._fold_early_stopping)(
-                        current_X, y_s, current_model, train_idx, val_idx,
-                        sw, scorer, fold_seed, **shap_kwargs,
+                        current_X,
+                        y_s,
+                        current_model,
+                        train_idx,
+                        val_idx,
+                        sw,
+                        scorer,
+                        fold_seed,
+                        **shap_kwargs,
                     )
                     for (train_idx, val_idx), fold_seed in zip(splits, fold_seeds)
                 )
             else:
                 fold_results = Parallel(n_jobs=self.n_jobs)(
                     delayed(self._fold_standard)(
-                        current_X, y_s, current_model, train_idx, val_idx,
-                        sw, scorer, fold_seed, **shap_kwargs,
+                        current_X,
+                        y_s,
+                        current_model,
+                        train_idx,
+                        val_idx,
+                        sw,
+                        scorer,
+                        fold_seed,
+                        **shap_kwargs,
                     )
                     for (train_idx, val_idx), fold_seed in zip(splits, fold_seeds)
                 )
@@ -329,7 +339,9 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
             scores_val = [r[2] for r in fold_results]
 
             importance_df = aggregate_shap_importance(
-                shap_values, working_columns, penalty_factor=penalty_factor,
+                shap_values,
+                working_columns,
+                penalty_factor=penalty_factor,
             )
 
             # Determine features to remove
@@ -337,27 +349,34 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
             # to go to zero (the stopping criteria already accounts for kept columns).
             effective_min = 0 if columns_to_keep else min_features
             features_to_remove = self._pick_features_to_remove(
-                importance_df, step, effective_min, columns_to_keep,
+                importance_df,
+                step,
+                effective_min,
+                columns_to_keep,
             )
             remove_set = set(features_to_remove)
             remaining_features = [f for f in current_features if f not in remove_set]
 
             # Record round
-            results.append({
-                "num_features": len(current_features),
-                "features_set": current_features,
-                "eliminated_features": features_to_remove,
-                "train_metric_mean": float(np.mean(scores_train)),
-                "train_metric_std": float(np.std(scores_train)),
-                "val_metric_mean": float(np.mean(scores_val)),
-                "val_metric_std": float(np.std(scores_val)),
-            })
+            results.append(
+                {
+                    "num_features": len(current_features),
+                    "features_set": current_features,
+                    "eliminated_features": features_to_remove,
+                    "train_metric_mean": float(np.mean(scores_train)),
+                    "train_metric_std": float(np.std(scores_train)),
+                    "val_metric_mean": float(np.mean(scores_val)),
+                    "val_metric_std": float(np.std(scores_val)),
+                }
+            )
 
             if self.verbose >= 2:
                 logger.info(
                     "Round %d: %d features, val=%.4f +/- %.4f, removed %s",
-                    round_number, len(current_features),
-                    results[-1]["val_metric_mean"], results[-1]["val_metric_std"],
+                    round_number,
+                    len(current_features),
+                    results[-1]["val_metric_mean"],
+                    results[-1]["val_metric_std"],
                     features_to_remove,
                 )
             if progress is not None:
@@ -410,9 +429,7 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
             match = report[report["num_features"] == method]
             if match.empty:
                 valid = sorted(report["num_features"].unique())
-                raise ValueError(
-                    f"No round had exactly {method} features. Available: {valid}"
-                )
+                raise ValueError(f"No round had exactly {method} features. Available: {valid}")
             return match.iloc[0]["features_set"]
 
         if method == "best":
@@ -426,9 +443,7 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
             within = report[report["val_metric_mean"] >= best_score - threshold]
             idx = within["num_features"].idxmin()
         else:
-            raise ValueError(
-                f"method must be 'best', 'best_coherent', 'best_parsimonious', or int; got {method!r}"
-            )
+            raise ValueError(f"method must be 'best', 'best_coherent', 'best_parsimonious', or int; got {method!r}")
 
         return report.loc[idx, "features_set"]
 
@@ -450,8 +465,7 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
             import matplotlib.pyplot as plt
         except ImportError as e:
             raise ImportError(
-                "matplotlib is required for plotting. Install it with: "
-                "pip install recursive-pietro[plot]"
+                "matplotlib is required for plotting. Install it with: pip install recursive-pietro[plot]"
             ) from e
 
         report = self.report_
@@ -492,7 +506,16 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
     # ------------------------------------------------------------------
 
     def _fold_standard(
-        self, X, y, model, train_idx, val_idx, sample_weight, scorer, fold_seed, **shap_kwargs,
+        self,
+        X,
+        y,
+        model,
+        train_idx,
+        val_idx,
+        sample_weight,
+        scorer,
+        fold_seed,
+        **shap_kwargs,
     ):
         """Fit model, score, compute SHAP — standard (no early stopping) path."""
         model = clone(model)
@@ -510,7 +533,8 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
         score_val = scorer(model, X_val, y_val)
 
         shap_vals = compute_shap_values(
-            model, X_val,
+            model,
+            X_val,
             approximate=self.shap_fast_mode,
             random_state=fold_seed,
             verbose=self.verbose,
@@ -519,7 +543,16 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
         return shap_vals, score_train, score_val
 
     def _fold_early_stopping(
-        self, X, y, model, train_idx, val_idx, sample_weight, scorer, fold_seed, **shap_kwargs,
+        self,
+        X,
+        y,
+        model,
+        train_idx,
+        val_idx,
+        sample_weight,
+        scorer,
+        fold_seed,
+        **shap_kwargs,
     ):
         """Fit model with early stopping, score, compute SHAP."""
         model = clone(model)
@@ -528,7 +561,11 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
         y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
 
         fit_params = get_early_stopping_fit_params(
-            model, X_train, y_train, X_val, y_val,
+            model,
+            X_train,
+            y_train,
+            X_val,
+            y_val,
             early_stopping_rounds=self.early_stopping_rounds,
             eval_metric=self.eval_metric,
             sample_weight=sample_weight,
@@ -542,7 +579,8 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
         score_val = scorer(model, X_val, y_val)
 
         shap_vals = compute_shap_values(
-            model, X_val,
+            model,
+            X_val,
             approximate=self.shap_fast_mode,
             random_state=fold_seed,
             verbose=self.verbose,

@@ -30,9 +30,7 @@ def validate_data(X: pd.DataFrame | np.ndarray, column_names: list[str] | None =
 
     if column_names is not None:
         if len(column_names) != df.shape[1]:
-            raise ValueError(
-                f"column_names has {len(column_names)} elements but X has {df.shape[1]} columns."
-            )
+            raise ValueError(f"column_names has {len(column_names)} elements but X has {df.shape[1]} columns.")
         df.columns = column_names
 
     # Ensure all column names are strings
@@ -127,8 +125,7 @@ def validate_groups(groups, index: pd.Index, cv_splitter) -> np.ndarray | None:
     if groups is None:
         if splitter_is_group_aware:
             raise ValueError(
-                f"CV splitter {type(cv_splitter).__name__} requires groups, "
-                "but groups=None was passed to fit()."
+                f"CV splitter {type(cv_splitter).__name__} requires groups, but groups=None was passed to fit()."
             )
         return None
 

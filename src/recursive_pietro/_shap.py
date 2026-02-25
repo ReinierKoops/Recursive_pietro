@@ -60,9 +60,7 @@ def compute_shap_values(
             explainer = Explainer(model, seed=random_state, masker=mask, **shap_kwargs)
 
         if isinstance(explainer, TreeExplainer):
-            shap_values = explainer.shap_values(
-                X, check_additivity=check_additivity, approximate=approximate
-            )
+            shap_values = explainer.shap_values(X, check_additivity=check_additivity, approximate=approximate)
             # SHAP >= 0.43: binary classification returns 3D array (n_samples, n_features, 2)
             if not isinstance(shap_values, list) and shap_values.ndim == 3:
                 shap_values = shap_values[:, :, 1]

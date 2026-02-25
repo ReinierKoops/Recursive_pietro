@@ -29,10 +29,12 @@ class TestComputeShapValues:
 
     def test_pipeline_raises(self, binary_dataset):
         X, y = binary_dataset
-        pipe = Pipeline([
-            ("scaler", StandardScaler()),
-            ("model", RandomForestClassifier(n_estimators=5, random_state=42)),
-        ])
+        pipe = Pipeline(
+            [
+                ("scaler", StandardScaler()),
+                ("model", RandomForestClassifier(n_estimators=5, random_state=42)),
+            ]
+        )
         pipe.fit(X, y)
         with pytest.raises(TypeError, match="Pipeline"):
             compute_shap_values(pipe, X)
@@ -63,12 +65,14 @@ class TestAggregateShapImportance:
         """A feature with high mean but high variance should drop with penalty."""
         # Feature 0: consistently important (low variance, mean_abs=1.0, std=0.0)
         # Feature 1: higher mean but very high variance (mean_abs=3.5, std=1.118)
-        shap_values = np.array([
-            [1.0, 5.0],
-            [1.0, -3.0],
-            [1.0, 4.0],
-            [1.0, -2.0],
-        ])
+        shap_values = np.array(
+            [
+                [1.0, 5.0],
+                [1.0, -3.0],
+                [1.0, 4.0],
+                [1.0, -2.0],
+            ]
+        )
         columns = ["consistent", "noisy"]
         result_no_penalty = aggregate_shap_importance(shap_values, columns, penalty_factor=0.0)
         result_penalty = aggregate_shap_importance(shap_values, columns, penalty_factor=3.0)

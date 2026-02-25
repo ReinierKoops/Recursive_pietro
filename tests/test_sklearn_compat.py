@@ -65,10 +65,12 @@ class TestPipeline:
         We use the selector as the last step so Pipeline.fit_transform works.
         """
         sel = ShapFeatureElimination(rf_classifier, step=3, cv=2, scoring="roc_auc", n_jobs=1)
-        pipe = Pipeline([
-            ("scaler", StandardScaler()),
-            ("selector", sel),
-        ])
+        pipe = Pipeline(
+            [
+                ("scaler", StandardScaler()),
+                ("selector", sel),
+            ]
+        )
         X, y = binary_dataset
         X_out = pipe.fit_transform(X, y)
         assert X_out.shape[1] <= X.shape[1]
