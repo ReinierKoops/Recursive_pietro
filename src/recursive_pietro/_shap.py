@@ -11,6 +11,25 @@ from shap.explainers import TreeExplainer
 from shap.utils import sample
 from sklearn.pipeline import Pipeline
 
+_TREE_MODEL_CLASSES = [
+    ("sklearn.ensemble", "BaseEnsemble"),
+    ("lightgbm", "LGBMModel"),
+    ("xgboost.sklearn", "XGBModel"),
+    ("catboost", "CatBoost"),
+]
+
+
+def _is_tree_model(model) -> bool:
+    """Check if a model is a tree-based model that works with TreeExplainer."""
+    for module_path, class_name in _TREE_MODEL_CLASSES:
+        try:
+            module = __import__(module_path, fromlist=[class_name])
+            if isinstance(model, getattr(module, class_name)):
+                return True
+        except (ImportError, AttributeError):
+            pass
+    return False
+
 
 def compute_shap_values(
     model,
@@ -48,10 +67,10 @@ def compute_shap_values(
     with warnings.catch_warnings():
         warnings.simplefilter("ignore" if verbose <= 1 else "default")
 
-        # For tree explainers with tree_path_dependent or categorical features,
-        # do not pass a masker (SHAP issue #480)
-        has_categoricals = X.select_dtypes("category").shape[1] > 0
-        if shap_kwargs.get("feature_perturbation") == "tree_path_dependent" or has_categoricals:
+        # Tree-based models don't need a background masker, and passing one
+        # can cause SHAP's auto-detection to fail with certain model/version
+        # combinations (e.g. XGBoost on older Python).
+        if _is_tree_model(model) or shap_kwargs.get("feature_perturbation") == "tree_path_dependent":
             explainer = Explainer(model, seed=random_state, **shap_kwargs)
         else:
             # Create background data for non-tree explainers
