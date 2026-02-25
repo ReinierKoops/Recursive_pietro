@@ -8,8 +8,13 @@ version = "0.1.0"
 requires-python = ">=3.10"
 description = "SHAP-based recursive feature elimination with cross-validation and early stopping"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+authors = [
+    { name = "Reinier Koops" },
+]
+keywords = ["shap", "feature-selection", "feature-elimination", "scikit-learn", "machine-learning"]
 classifiers = [
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
@@ -19,8 +24,8 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Typing :: Typed",
 ]
 dependencies = [
     "scikit-learn>=1.3",
@@ -48,10 +53,15 @@ dev = [
 ]
 
 [project.urls]
+Homepage = "https://github.com/ReinierKoops/Recursive_pietro"
 Repository = "https://github.com/ReinierKoops/Recursive_pietro"
+Issues = "https://github.com/ReinierKoops/Recursive_pietro/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+recursive_pietro = ["py.typed"]
 
 [tool.ruff]
 line-length = 120
