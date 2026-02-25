@@ -24,6 +24,7 @@ from recursive_pietro._shap import aggregate_shap_importance, compute_shap_value
 from recursive_pietro._validation import (
     validate_columns_to_keep,
     validate_data,
+    validate_groups,
     validate_min_features,
     validate_sample_weight,
     validate_shap_variance_penalty,
@@ -250,6 +251,7 @@ class ShapFeatureElimination(SelectorMixin, BaseEstimator):
         is_search = isinstance(self.model, BaseSearchCV)
         scorer = check_scoring(self.model, scoring=self.scoring)
         cv_splitter = check_cv(self.cv, y_s, classifier=is_classifier(self.model))
+        groups = validate_groups(groups, X_df.index, cv_splitter)
 
         # Stopping floor: at least keep columns_to_keep
         n_keep = len(columns_to_keep) if columns_to_keep else 0

@@ -98,6 +98,52 @@ def validate_columns_to_keep(
     return list(columns_to_keep)
 
 
+def validate_groups(groups, index: pd.Index, cv_splitter) -> np.ndarray | None:
+    """Validate and convert groups for group-aware CV splitters.
+
+    Raises ValueError when *groups* is provided but the CV splitter does not
+    consume them, or vice-versa.
+    """
+    # Detect whether the splitter expects groups.
+    # Group-aware splitters define get_n_splits(X, y, groups) and will fail
+    # without groups.  A reliable check: the splitter's class lives in a
+    # module path containing "group" or it has ``groups`` in its split signature.
+    _GROUP_SPLITTERS = set()
+    try:
+        from sklearn.model_selection import (
+            GroupKFold,
+            GroupShuffleSplit,
+            LeaveOneGroupOut,
+            LeavePGroupsOut,
+            StratifiedGroupKFold,
+        )
+
+        _GROUP_SPLITTERS = {GroupKFold, GroupShuffleSplit, LeaveOneGroupOut, LeavePGroupsOut, StratifiedGroupKFold}
+    except ImportError:
+        pass
+
+    splitter_is_group_aware = type(cv_splitter) in _GROUP_SPLITTERS
+
+    if groups is None:
+        if splitter_is_group_aware:
+            raise ValueError(
+                f"CV splitter {type(cv_splitter).__name__} requires groups, "
+                "but groups=None was passed to fit()."
+            )
+        return None
+
+    if not splitter_is_group_aware:
+        warnings.warn(
+            f"groups was provided but CV splitter {type(cv_splitter).__name__} "
+            "does not use groups. The groups argument will be ignored. "
+            "Pass a group-aware splitter (e.g. GroupKFold) to use groups."
+        )
+
+    if isinstance(groups, pd.Series):
+        return groups.reindex(index).values
+    return np.asarray(groups)
+
+
 def validate_shap_variance_penalty(factor: float | int | None) -> float:
     """Validate and normalize the SHAP variance penalty factor."""
     if factor is None:
