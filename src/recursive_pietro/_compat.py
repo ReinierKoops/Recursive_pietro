@@ -1,7 +1,5 @@
 """Early stopping compatibility layer for boosted tree models."""
 
-from __future__ import annotations
-
 from sklearn.model_selection._search import BaseSearchCV
 
 

@@ -1,7 +1,5 @@
 """Input validation utilities for recursive_pietro."""
 
-from __future__ import annotations
-
 import warnings
 
 import numpy as np
