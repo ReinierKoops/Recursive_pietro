@@ -9,7 +9,7 @@ from math import floor
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from sklearn.base import BaseEstimator, clone, is_classifier, is_regressor
+from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.feature_selection import SelectorMixin
 from sklearn.metrics import check_scoring
 from sklearn.model_selection import check_cv

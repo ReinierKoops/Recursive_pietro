@@ -1,9 +1,7 @@
 """Tests for the core ShapFeatureElimination class."""
 
-import numpy as np
 import pandas as pd
 import pytest
-from sklearn.ensemble import RandomForestClassifier
 
 from recursive_pietro import ShapFeatureElimination
 

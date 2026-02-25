@@ -1,7 +1,6 @@
 """Tests for SHAP computation helpers."""
 
 import numpy as np
-import pandas as pd
 import pytest
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline

@@ -1,6 +1,5 @@
 """Shared fixtures for recursive_pietro tests."""
 
-import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_classification, make_regression
