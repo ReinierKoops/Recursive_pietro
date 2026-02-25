@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import warnings
 
 import numpy as np
@@ -30,29 +29,6 @@ def _is_tree_model(model) -> bool:
         except (ImportError, AttributeError):
             pass
     return False
-
-
-def _fix_xgboost_base_score(model) -> None:
-    """Fix XGBoost 2.x base_score serialisation for SHAP compatibility.
-
-    XGBoost 2.x stores base_score as ``'[5E-1]'`` (bracketed scientific
-    notation) in the booster config. Older SHAP versions call
-    ``float(base_score)`` which chokes on the brackets. This helper
-    rewrites the config in-place so that base_score is a plain float string.
-    """
-    try:
-        from xgboost.sklearn import XGBModel
-
-        if not isinstance(model, XGBModel):
-            return
-        booster = model.get_booster()
-        config = json.loads(booster.save_config())
-        bs = config["learner"]["learner_model_param"]["base_score"]
-        if isinstance(bs, str) and bs.startswith("["):
-            config["learner"]["learner_model_param"]["base_score"] = bs.strip("[]")
-            booster.load_config(json.dumps(config))
-    except (ImportError, KeyError, ValueError, AttributeError):
-        pass
 
 
 def compute_shap_values(
@@ -95,7 +71,6 @@ def compute_shap_values(
         # shap.Explainer auto-detection failures on certain Python/package
         # version combinations (e.g. XGBoost on Python 3.10).
         if _is_tree_model(model) or shap_kwargs.get("feature_perturbation") == "tree_path_dependent":
-            _fix_xgboost_base_score(model)
             explainer = TreeExplainer(model, **shap_kwargs)
             shap_values = explainer.shap_values(X, check_additivity=check_additivity, approximate=approximate)
             # SHAP >= 0.43: binary classification returns 3D array (n_samples, n_features, 2)
